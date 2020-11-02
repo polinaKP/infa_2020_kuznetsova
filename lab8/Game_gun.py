@@ -1,253 +1,189 @@
-{
- "cells": [
-  {
-   "cell_type": "code",
-   "execution_count": 7,
-   "metadata": {},
-   "outputs": [
-    {
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      "!!!\n",
-      "!\n",
-      "!!!\n",
-      "!\n",
-      "!!!\n",
-      "!\n",
-      "!!!\n",
-      "!\n",
-      "!!!\n",
-      "!\n"
-     ]
-    }
-   ],
-   "source": [
-    "import math\n",
-    "import pygame\n",
-    "from pygame.draw import *\n",
-    "from pygame.event import *\n",
-    "from random import *\n",
-    "import time\n",
-    "\n",
-    "# start condition\n",
-    "score = 0\n",
-    "height_screen = 700\n",
-    "width_screen = 1200\n",
-    "FPS = 30\n",
-    "dt = 0.5\n",
-    "# gun\n",
-    "gun_width = 25\n",
-    "gun_length = 100\n",
-    "x_start_gun = 25\n",
-    "y_start_gun = height_screen - 10\n",
-    "direction_start = math.pi / 3\n",
-    "# balls\n",
-    "count_ball = 1\n",
-    "min_speed_ball = 20\n",
-    "max_speed_ball = 60\n",
-    "radius_ball = gun_width / 2\n",
-    "balls = []\n",
-    "acceleration = 1\n",
-    "# target\n",
-    "x_left_target = width_screen // 2\n",
-    "x_right_target = width_screen\n",
-    "y_top_target = 0\n",
-    "y_bottom_target = height_screen\n",
-    "min_speed_target = 10\n",
-    "max_speed_target = 30\n",
-    "min_radius_target = 5\n",
-    "max_radius_target = 20\n",
-    "count_target = 4\n",
-    "targets = []\n",
-    "\n",
-    "\n",
-    "screen = pygame.display.set_mode((width_screen, height_screen))\n",
-    "\n",
-    "colors = [(0,0,0), # black\n",
-    "          (173, 253, 47), # green_yellow\n",
-    "          (0, 128, 0) # green\n",
-    "         ]\n",
-    "\n",
-    "class Ball():\n",
-    "    def __init__(self, radius, x, y, angle, screen):\n",
-    "        \n",
-    "        self.screen = screen\n",
-    "        self.x = x \n",
-    "        self.y = y\n",
-    "        self.r = radius\n",
-    "        self.speed = randint(min_speed_ball, max_speed_ball)\n",
-    "        self.angle = angle\n",
-    "        self.a = acceleration\n",
-    "        self.vx = self.speed * math.cos(self.angle)\n",
-    "        self.vy = -self.speed * math.sin(self.angle)\n",
-    "        self.color = colors[randint(1,1)]\n",
-    "        \n",
-    "    def move(self):\n",
-    "        if self.x >= width_screen - self.r or self.r >= self.x:\n",
-    "            self.vx *= -0.5\n",
-    "            if self.x <= self.r:\n",
-    "                self.x = self.r\n",
-    "            else:\n",
-    "                self.x = width_screen - self.r\n",
-    "        if self.y >= height_screen - self.r:\n",
-    "            self.vy *= -0.5\n",
-    "            self.vx *= 0.95\n",
-    "            self.y = height_screen - self.r\n",
-    "        self.x += self.vx\n",
-    "        self.vy += self.a * dt\n",
-    "        self.y += self.vy * dt\n",
-    "        circle(self.screen, self.color, (int(self.x), int(self.y)), int(self.r))\n",
-    "        return self.x, self.y, self.r\n",
-    "    \n",
-    "    def delete(self):\n",
-    "        \n",
-    "        print(\"!\")\n",
-    "\n",
-    "class Gun():\n",
-    "    def __init__(self, x, y):\n",
-    "        \n",
-    "        self.screen = screen\n",
-    "        self.x = x\n",
-    "        self.y = y\n",
-    "        self.width = gun_width\n",
-    "        self.length = gun_length\n",
-    "        self.height = height_screen\n",
-    "        self.direction = direction_start\n",
-    "        self.color = colors[1]\n",
-    "        \n",
-    "    def turn(self, x, y):\n",
-    "        if x != 0:\n",
-    "            self.direction = math.atan((self.height - y) / x)\n",
-    "        return self.direction\n",
-    "        \n",
-    "    def draw(self):\n",
-    "        \n",
-    "        x = int(self.x)\n",
-    "        y = int(self.y)\n",
-    "        w = self.width\n",
-    "        l = self.length\n",
-    "        d = self.direction\n",
-    "        \n",
-    "        polygon(self.screen, self.color,\n",
-    "                ((x, y),\n",
-    "                 (x - int(w * math.sin(d)), y - int(w * math.cos(d))),\n",
-    "                 (x - int(w * math.sin(d) - l * math.cos(d)), y - int(w * math.cos(d) + l * math.sin(d))),\n",
-    "                 (x + int(l * math.cos(d)), y - int(l * math.sin(d)))\n",
-    "                ))\n",
-    "        return x - w * math.sin(d) // 2 + l * math.cos(d), y - l * math.sin(d) - w * math.cos(d) // 2\n",
-    "\n",
-    "\n",
-    "class Target():\n",
-    "    def __init__(self):\n",
-    "        \n",
-    "        self.screen = screen\n",
-    "        self.x = randint(x_left_target, x_right_target)\n",
-    "        self.y = randint(y_top_target, y_bottom_target)\n",
-    "        self.r = randint(min_radius_target, max_radius_target)\n",
-    "        self.angle = random() * 2 * math.pi\n",
-    "        self.color = colors[randint(2,2)]\n",
-    "        self.speed = randint(min_speed_target, max_speed_target)\n",
-    "    \n",
-    "    def draw(self):\n",
-    "        \n",
-    "        circle(self.screen, self.color, (self.x, self.y), self.r)\n",
-    "        \n",
-    "    def move(self):\n",
-    "        \n",
-    "        if self.x >= width_screen - self.r:\n",
-    "            self.angle = math.pi / 2 + random() * math.pi\n",
-    "        if self.y >= height_screen - self.r:\n",
-    "            self.angle = random() * math.pi\n",
-    "        if self.r >= self.x:\n",
-    "            self.angle = random() * math.pi - math.pi / 2\n",
-    "        if self.r >= self.y:\n",
-    "            self.angle = random() * math.pi + math.pi\n",
-    "        self.x += int(self.speed * math.cos(self.angle))\n",
-    "        self.y -= int(self.speed * math.sin(self.angle))\n",
-    "        target.draw()\n",
-    "    \n",
-    "    \n",
-    "    def hit(self, x_ball, y_ball, r_ball):\n",
-    "\n",
-    "        distance = math.sqrt((x_ball - self.x) ** 2 + (y_ball - self.y) ** 2)\n",
-    "        if distance <= self.r + r_ball:\n",
-    "            target.delete()\n",
-    "            ball.delete()\n",
-    "#             score = score + 1\n",
-    "\n",
-    "    def delete(self):\n",
-    "        \n",
-    "        print(\"!!!\")\n",
-    "\n",
-    "\n",
-    "clock = pygame.time.Clock()\n",
-    "finished = False\n",
-    "\n",
-    "# generetion parameters of the gun\n",
-    "gun = Gun(x_start_gun, y_start_gun)\n",
-    "\n",
-    "# generetion parameters of the first target\n",
-    "for target in range(count_target):\n",
-    "    targets.append(Target())\n",
-    "\n",
-    "while not finished:\n",
-    "    clock.tick(FPS)\n",
-    "    pygame.display.update()\n",
-    "    screen.fill(colors[0])\n",
-    "    x_start_ball, y_start_ball = gun.draw()\n",
-    "    for event in pygame.event.get():\n",
-    "        if event.type == pygame.MOUSEMOTION:\n",
-    "            x_mouse, y_mouse = pygame.mouse.get_pos()\n",
-    "            angle = gun.turn(x_mouse, y_mouse)\n",
-    "        if event.type == pygame.QUIT:\n",
-    "            finished = True\n",
-    "        elif event.type == pygame.KEYDOWN:\n",
-    "            if event.key == pygame.K_SPACE:\n",
-    "                balls.append(Ball(radius_ball, x_start_ball, y_start_ball, angle, screen))\n",
-    "    for ball in balls:\n",
-    "        x_ball, y_ball, r_ball = ball.move()    \n",
-    "        target.hit(x_ball, y_ball, r_ball)    \n",
-    "    for target in targets:\n",
-    "        target.move()\n",
-    "        \n",
-    "pygame.quit()"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": []
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": []
-  }
- ],
- "metadata": {
-  "kernelspec": {
-   "display_name": "Python 3",
-   "language": "python",
-   "name": "python3"
-  },
-  "language_info": {
-   "codemirror_mode": {
-    "name": "ipython",
-    "version": 3
-   },
-   "file_extension": ".py",
-   "mimetype": "text/x-python",
-   "name": "python",
-   "nbconvert_exporter": "python",
-   "pygments_lexer": "ipython3",
-   "version": "3.8.3"
-  }
- },
- "nbformat": 4,
- "nbformat_minor": 4
-}
+import math
+import pygame
+from pygame.draw import *
+from pygame.event import *
+from random import *
+import time
+
+# start condition
+score = 0
+height_screen = 700
+width_screen = 1200
+FPS = 30
+dt = 0.5
+# gun
+gun_width = 25
+gun_length = 100
+x_start_gun = 25
+y_start_gun = height_screen - 10
+direction_start = math.pi / 3
+# balls
+count_ball = 1
+min_speed_ball = 20
+max_speed_ball = 60
+radius_ball = gun_width / 2
+balls = []
+acceleration = 1
+# target
+x_left_target = width_screen // 2
+x_right_target = width_screen
+y_top_target = 0
+y_bottom_target = height_screen
+min_speed_target = 10
+max_speed_target = 30
+min_radius_target = 5
+max_radius_target = 20
+count_target = 4
+targets = []
+
+
+screen = pygame.display.set_mode((width_screen, height_screen))
+
+colors = [(0,0,0), # black
+          (173, 253, 47), # green_yellow
+          (0, 128, 0) # green
+         ]
+
+class Ball():
+    def __init__(self, radius, x, y, angle, screen):
+        
+        self.screen = screen
+        self.x = x 
+        self.y = y
+        self.r = radius
+        self.speed = randint(min_speed_ball, max_speed_ball)
+        self.angle = angle
+        self.a = acceleration
+        self.vx = self.speed * math.cos(self.angle)
+        self.vy = -self.speed * math.sin(self.angle)
+        self.color = colors[randint(1,1)]
+        
+    def move(self):
+        if self.x >= width_screen - self.r or self.r >= self.x:
+            self.vx *= -0.5
+            if self.x <= self.r:
+                self.x = self.r
+            else:
+                self.x = width_screen - self.r
+        if self.y >= height_screen - self.r:
+            self.vy *= -0.5
+            self.vx *= 0.95
+            self.y = height_screen - self.r
+        self.x += self.vx
+        self.vy += self.a * dt
+        self.y += self.vy * dt
+        circle(self.screen, self.color, (int(self.x), int(self.y)), int(self.r))
+        return self.x, self.y, self.r
+    
+    def delete(self):
+        
+        print("!")
+
+class Gun():
+    def __init__(self, x, y):
+        
+        self.screen = screen
+        self.x = x
+        self.y = y
+        self.width = gun_width
+        self.length = gun_length
+        self.height = height_screen
+        self.direction = direction_start
+        self.color = colors[1]
+        
+    def turn(self, x, y):
+        if x != 0:
+            self.direction = math.atan((self.height - y) / x)
+        return self.direction
+        
+    def draw(self):
+        
+        x = int(self.x)
+        y = int(self.y)
+        w = self.width
+        l = self.length
+        d = self.direction
+        
+        polygon(self.screen, self.color,
+                ((x, y),
+                 (x - int(w * math.sin(d)), y - int(w * math.cos(d))),
+                 (x - int(w * math.sin(d) - l * math.cos(d)), y - int(w * math.cos(d) + l * math.sin(d))),
+                 (x + int(l * math.cos(d)), y - int(l * math.sin(d)))
+                ))
+        return x - w * math.sin(d) // 2 + l * math.cos(d), y - l * math.sin(d) - w * math.cos(d) // 2
+
+
+class Target():
+    def __init__(self):
+        
+        self.screen = screen
+        self.x = randint(x_left_target, x_right_target)
+        self.y = randint(y_top_target, y_bottom_target)
+        self.r = randint(min_radius_target, max_radius_target)
+        self.angle = random() * 2 * math.pi
+        self.color = colors[randint(2,2)]
+        self.speed = randint(min_speed_target, max_speed_target)
+    
+    def draw(self):
+        
+        circle(self.screen, self.color, (self.x, self.y), self.r)
+        
+    def move(self):
+        
+        if self.x >= width_screen - self.r:
+            self.angle = math.pi / 2 + random() * math.pi
+        if self.y >= height_screen - self.r:
+            self.angle = random() * math.pi
+        if self.r >= self.x:
+            self.angle = random() * math.pi - math.pi / 2
+        if self.r >= self.y:
+            self.angle = random() * math.pi + math.pi
+        self.x += int(self.speed * math.cos(self.angle))
+        self.y -= int(self.speed * math.sin(self.angle))
+        target.draw()
+    
+    
+    def hit(self, x_ball, y_ball, r_ball):
+
+        distance = math.sqrt((x_ball - self.x) ** 2 + (y_ball - self.y) ** 2)
+        if distance <= self.r + r_ball:
+            target.delete()
+            ball.delete()
+#             score = score + 1
+
+    def delete(self):
+        
+        print("!!!")
+
+
+clock = pygame.time.Clock()
+finished = False
+
+# generetion parameters of the gun
+gun = Gun(x_start_gun, y_start_gun)
+
+# generetion parameters of the first target
+for target in range(count_target):
+    targets.append(Target())
+
+while not finished:
+    clock.tick(FPS)
+    pygame.display.update()
+    screen.fill(colors[0])
+    x_start_ball, y_start_ball = gun.draw()
+    for event in pygame.event.get():
+        if event.type == pygame.MOUSEMOTION:
+            x_mouse, y_mouse = pygame.mouse.get_pos()
+            angle = gun.turn(x_mouse, y_mouse)
+        if event.type == pygame.QUIT:
+            finished = True
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                balls.append(Ball(radius_ball, x_start_ball, y_start_ball, angle, screen))
+    for ball in balls:
+        x_ball, y_ball, r_ball = ball.move()    
+        target.hit(x_ball, y_ball, r_ball)    
+    for target in targets:
+        target.move()
+        
+pygame.quit()
